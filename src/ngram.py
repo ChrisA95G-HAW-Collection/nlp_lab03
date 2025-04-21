@@ -1,0 +1,165 @@
+import math
+from collections import defaultdict
+
+def word_count(dataset):
+    """
+    This is just a littel helper function for unigram
+    and bigram
+    """
+    total_words = 0
+    #! i didnt know that int() returns 0 this could be good to keep in minde 
+    #! BUT HERE WE NEED INT WIHTOUT () THIS IS VERY CONFUSING!!!
+    model_dict = defaultdict(int)
+    for sentence in dataset:
+        for word in sentence.split():
+            model_dict[word] += 1
+            total_words += 1
+    
+    return total_words, model_dict
+
+
+def estimate_unigram(train_set):
+    """
+    Basic unigram model that simply counts all words
+    and returns them as keys with there probalbility as values
+    """
+    total_words, model_dict = word_count(train_set)
+    model = {}
+    for key in model_dict.keys():
+        model[key] = (model_dict[key] / total_words)
+    
+    return model
+
+
+def estimate_bigram(dataset):
+    """
+    This gernerates a unigram and bigram model
+    dont ask me why we are supposed to return both models.
+    Makes no sense to me but prof is king i guess.
+    """
+    total_words, unigram_model_dict = word_count(dataset)
+
+    # First part is just unigram
+    unigram_model = {}
+    for key in unigram_model_dict.keys():
+        unigram_model[key] = (unigram_model_dict[key] / total_words)
+    
+
+    # Secound part is bigram
+    #! This is very helpfull to store the count of word pairs!
+    bigram_dict = defaultdict(lambda: defaultdict(int))
+    bigram_model = defaultdict(lambda: defaultdict(int))
+
+    # Counting:
+    #! This is the good part! We use zip to generate our word pairs
+    #! then we iterate over the word pairs from zip and count them in 
+    #! the nested defaultdict (bigram_dict)
+    for sentence in dataset:
+        split = sentence.split()
+        word_pairs = zip(split, split[1:])
+
+        for w_iminus1, w_i in word_pairs:
+            bigram_dict[w_iminus1][w_i] += 1
+    
+    # Generating Model:
+    # This was a bit harder to wrap my brain around. 
+    # The nested defaultdict is not the easyest strucktur to visiulalize
+
+    #! First we loop thru the "outer" dict, to count up the w_i-1 (previous word)
+    for w_iminus1 in bigram_dict:
+        count_w_iminus1 = unigram_model_dict[w_iminus1]
+
+        # Check for Zero devision just in case
+        if count_w_iminus1 > 0:
+            #! Then we loop thru the "inner" dict, to count up the word pairs
+            for w_i in bigram_dict[w_iminus1]:
+                pair_count = bigram_dict[w_iminus1][w_i] 
+
+                # extra step with proba. because it is better to understand this way
+                probability = pair_count / count_w_iminus1
+                bigram_model[w_iminus1][w_i] = probability
+
+    return unigram_model, bigram_model
+
+
+def unigram_sentence_logp(sentence, model):
+    """ 
+    This is the corss-entropy formula from the lecture/assignment,
+    we look at each word of a sentence and calculate the log
+    and add them up to get the probability of the sentence.
+    If we dont know a word -> Prob = 0. the log would be -inf!
+    BUT per formula we take the negativ log so it would become inf!
+    BUT this does not feel good to me, i would rather still return the negativ inf.
+    Not sure if returning this is what we should do here, but thats the way i like it.
+    """
+    total_log = 0.0 #! Dont forget that we need float here!
+
+    for word in sentence.split():
+        if word in model:
+            total_log += -(math.log2(model[word])) #! I use -log2 here because we use -log2 in the cross-entropy formula
+        else:
+            return float('-inf')
+    
+    return total_log
+
+def bigram_sentence_logp(sentence, unigram_model, bigram_model):
+    """
+    We removed short sentences so no need to worry about empty sentences here! log2(0) and so on...
+    Important Note: Because many plausible word pairs might not appear in even a large training set,
+    this function (using the unsmoothed bigram model) is likely to return float('-inf') very often!
+    This is expected and highlights why smoothing is necessary.
+    """
+
+    sentence = sentence.split()
+
+    total_log = 0.0
+    w1 = sentence[0]
+
+    #! This is a very important step! I am prone to just over read the P(w1) that
+    #! comes before the product in the formula
+    if w1 not in unigram_model:
+        #This means p_w1 = 0 and therefor:
+        return float('-inf')
+    else:
+        p_w1 = unigram_model[w1]
+        total_log += -(math.log2(p_w1)) #we use negativ here because of negativ log likelihood, rightttt???
+    
+    word_pairs = zip(sentence, sentence[1:])
+    
+    # This is again a bit harder to wrap my brain around.
+    for w_iminus1, w_i in word_pairs:
+        if w_iminus1 in bigram_model and w_i in bigram_model[w_iminus1]:
+            # Pair exists, get probability
+            p_cond = bigram_model[w_iminus1][w_i]
+            total_log += -(math.log2(p_cond)) # Add the (negative) log prob
+        else:
+            # Pair not found in model, P=0 for sentence
+            return float('-inf')
+        
+    return total_log
+
+
+def unigram_perplexity(dataset, model):
+    """
+    This is the Perplexity formula from the lecture/assignment.
+    We now add up the log2 of each sentence in the dataset(test set)
+    and then we just divide the log with the number of words (cross-entropy).
+    Then we calculate and return the perpelecity by raising 2 to the power of the cross-entropy
+    """
+    dataset_log = 0.0
+    dataset_words = 0
+
+    for sentence in dataset['sentence']:
+        sentence_log = unigram_sentence_logp(sentence, model)
+        if sentence_log == float('-inf'):
+            continue
+        dataset_log += sentence_log
+        dataset_words += len(sentence)
+    
+    if dataset_words == 0:
+        raise Exception("There are no valid sentences!")
+    
+    h = dataset_log / dataset_words
+    perplexity = 2**h
+
+    return perplexity
