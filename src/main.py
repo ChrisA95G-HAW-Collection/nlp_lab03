@@ -1,7 +1,7 @@
 import datasets
 from collections import defaultdict
 from preprocessing import add_stop_token_batch, filter_short_sentence_batch, get_rares, replace_rares_batch
-from ngram import estimate_unigram, unigram_sentence_logp, unigram_perplexity, estimate_bigram, bigram_sentence_logp
+from ngram import estimate_unigram, unigram_sentence_logp, perplexity, estimate_bigram, estimate_bigram_smoothed, bigram_sentence_logp
 
 
 def main():
@@ -32,7 +32,7 @@ def main():
     print('Log of test sentence1: ',unigram_sentence_logp("the the the <stop>", model))
     print('Log of test sentence2: ',unigram_sentence_logp("i love computer science <stop>", model), "\n")
 
-    print('Model Performance before rare removal: ',unigram_perplexity(dataset_split['test'], model), "\n")
+    print('Model Performance before rare removal: ',perplexity(dataset_split['test'], model), "\n")
     
     rares = get_rares(5, dataset_split)
 
@@ -49,14 +49,34 @@ def main():
     )
 
     model = estimate_unigram(dataset_split['train']['sentence'])
-    print("\n",'Model Performance after rare removal: ', unigram_perplexity(dataset_split['test'], model))
+    print("\n",'Model Performance after rare removal: ', perplexity(dataset_split['test'], model))
 
     #! Part two. Bigram stuff:
     unigram_model, bigram_model = estimate_bigram(dataset_split['train']['sentence'])
 
     print("\n Part two. Bigram:")
     print('Log of test sentence1: ', bigram_sentence_logp("the the the <stop>", unigram_model, bigram_model))
-    print('Log of test sentence2: ', bigram_sentence_logp("i love computer science <stop>", unigram_model, bigram_model))
+    print('Log of test sentence2: ', bigram_sentence_logp("i love computer science <stop>", unigram_model, bigram_model), "\n")
+
+    zero_prob_counter = 0
+    for sentence in dataset_split['test']['sentence']:
+        prob = bigram_sentence_logp(sentence, unigram_model, bigram_model)
+        if prob == float('-inf'):
+            zero_prob_counter += 1
+    
+    print(f"There are: {zero_prob_counter}/{len(dataset_split["test"]['sentence'])} sentences with a probability of 0 in the test set! \n")
+
+    #! Bigram with Laplac smoothing:
+
+    unigram_model, bigram_model_smoothed = estimate_bigram_smoothed(dataset_split['train']['sentence'], alpha=0.1)
+
+    print("Bigram with Laplac smoothing:")
+    print('Log of test sentence1: ', bigram_sentence_logp("the the the <stop>", unigram_model, bigram_model_smoothed))
+    print('Log of test sentence2: ', bigram_sentence_logp("i love computer science <stop>", unigram_model, bigram_model_smoothed), "\n")
+
+    print("\n",'Model Performance after with laplac smoothing: ', perplexity(dataset_split['test'], unigram_model, bigram_model_smoothed))
+
+
 
 
 
