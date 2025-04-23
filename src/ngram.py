@@ -203,7 +203,7 @@ def perplexity(dataset, unigram_model, bigram_model=None):
         if sentence_log == float('-inf'): #! this is here to handle cases where the FIRST word might be unknown!
                 continue
         dataset_log += sentence_log
-        dataset_words += len(sentence)
+        dataset_words += len(sentence.split())
 
     if dataset_words == 0:
         raise Exception("There are no valid sentences!")
