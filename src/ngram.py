@@ -34,7 +34,7 @@ def bigram_helper(dataset):
         unigram_model[key] = (unigram_model_dict[key] / total_words)
     
 
-    # Secound part is bigram
+    # Second part is bigram
     #! This is very helpfull to store the count of word pairs!
     bigram_dict = defaultdict(lambda: defaultdict(int))
     bigram_model = defaultdict(lambda: defaultdict(int))
@@ -130,19 +130,16 @@ def estimate_bigram_smoothed(dataset, alpha: float):
 
 def unigram_sentence_logp(sentence, model):
     """ 
-    This is the corss-entropy formula from the lecture/assignment,
+    This is part of the corss-entropy formula from the lecture/assignment,
     we look at each word of a sentence and calculate the log
     and add them up to get the probability of the sentence.
     If we dont know a word -> Prob = 0. the log would be -inf!
-    BUT per formula we take the negativ log so it would become inf!
-    BUT this does not feel good to me, i would rather still return the negativ inf.
-    Not sure if returning this is what we should do here, but thats the way i like it.
     """
     total_log = 0.0 #! Dont forget that we need float here!
 
     for word in sentence.split():
         if word in model:
-            total_log += -(math.log2(model[word])) #! I use -log2 here because we use -log2 in the cross-entropy formula?
+            total_log += (math.log2(model[word])) #! I use -log2 here because we use -log2 in the cross-entropy formula?
         else:
             return float('-inf')
     
@@ -153,7 +150,6 @@ def bigram_sentence_logp(sentence, unigram_model, bigram_model):
     We removed short sentences so no need to worry about empty sentences here! log2(0) and so on...
     Important Note: Because many plausible word pairs might not appear in even a large training set,
     this function (using the unsmoothed bigram model) is likely to return float('-inf') very often!
-    This is expected and highlights why smoothing is necessary.
     """
 
     sentence = sentence.split()
@@ -168,7 +164,7 @@ def bigram_sentence_logp(sentence, unigram_model, bigram_model):
         return float('-inf')
     else:
         p_w1 = unigram_model[w1]
-        total_log += -(math.log2(p_w1)) #we use negativ here because of negativ log likelihood, rightttt???
+        total_log += (math.log2(p_w1)) #we use negativ here because of negativ log likelihood, rightttt???
     
     word_pairs = zip(sentence, sentence[1:])
     
@@ -203,7 +199,7 @@ def perplexity(dataset, unigram_model, bigram_model=None):
             sentence_log = bigram_sentence_logp(sentence, unigram_model, bigram_model)
         else:
             sentence_log = unigram_sentence_logp(sentence, unigram_model)
-            
+        
         if sentence_log == float('-inf'): #! this is here to handle cases where the FIRST word might be unknown!
                 continue
         dataset_log += sentence_log
@@ -212,7 +208,7 @@ def perplexity(dataset, unigram_model, bigram_model=None):
     if dataset_words == 0:
         raise Exception("There are no valid sentences!")
     
-    h = dataset_log / dataset_words
+    h = -(dataset_log / dataset_words)
     perplexity = 2**h
 
     return perplexity
