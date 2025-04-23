@@ -3,6 +3,8 @@ from collections import defaultdict
 from preprocessing import add_stop_token_batch, filter_short_sentence_batch, get_rares, replace_rares_batch
 from ngram import estimate_unigram, unigram_sentence_logp, perplexity, estimate_bigram, estimate_bigram_smoothed, bigram_sentence_logp
 
+# The threshold for the rare words removal
+THRESHOLD = 3
 
 def main():
     # Dataloading step
@@ -34,7 +36,7 @@ def main():
 
     print('Model Performance before rare removal: ',perplexity(dataset_split['test'], model), "\n")
     
-    rares = get_rares(5, dataset_split)
+    rares = get_rares(THRESHOLD, dataset_split)
 
     dataset_split['train'] = dataset_split['train'].map(
         replace_rares_batch,

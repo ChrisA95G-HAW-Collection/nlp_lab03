@@ -139,7 +139,7 @@ def unigram_sentence_logp(sentence, model):
 
     for word in sentence.split():
         if word in model:
-            total_log += (math.log2(model[word])) #! I use -log2 here because we use -log2 in the cross-entropy formula?
+            total_log += math.log2(model[word])
         else:
             return float('-inf')
     
@@ -164,7 +164,7 @@ def bigram_sentence_logp(sentence, unigram_model, bigram_model):
         return float('-inf')
     else:
         p_w1 = unigram_model[w1]
-        total_log += (math.log2(p_w1)) #we use negativ here because of negativ log likelihood, rightttt???
+        total_log += math.log2(p_w1)
     
     word_pairs = zip(sentence, sentence[1:])
     
@@ -173,7 +173,7 @@ def bigram_sentence_logp(sentence, unigram_model, bigram_model):
         if w_iminus1 in bigram_model and w_i in bigram_model[w_iminus1]:
             # Pair exists, get probability
             p_cond = bigram_model[w_iminus1][w_i]
-            total_log += (math.log2(p_cond)) # Add the (negative) log prob #! DO WE NEED MINUS HERE OR NOT?
+            total_log += math.log2(p_cond)
         else:
             # Pair not found in model, P=0 for sentence
             return float('-inf')
@@ -185,8 +185,8 @@ def perplexity(dataset, unigram_model, bigram_model=None):
     """
     This is the Perplexity formula from the lecture/assignment.
     We now add up the log2 of each sentence in the dataset(test set)
-    and then we just divide the log with the number of words (cross-entropy).
-    Then we calculate and return the perpelecity by raising 2 to the power of the cross-entropy.
+    and then we just divide the negativ log with the number of words (cross-entropy).
+    Then we calculate and return the perpelexity by raising 2 to the power of the cross-entropy.
 
     NOTE: Refractured the code to handel both unigram and bigram models.
     """

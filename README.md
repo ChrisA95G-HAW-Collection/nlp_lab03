@@ -16,7 +16,6 @@ This project implements and evaluates unigram and bigram language models using t
 
 ## Requirements
 
-*   Python 3.x
 *   `datasets` library
 *   `tqdm` library
 
@@ -31,7 +30,7 @@ This project implements and evaluates unigram and bigram language models using t
 
 ## Usage
 Run the main script to train and evaluate the models:
-```
+```bash
 uv run src/main.py
 ```
 ### The script will:
@@ -60,7 +59,7 @@ uv run src/main.py
 
 ## Implementation Details
 
-* **Preprocessing:** Uses the `datasets` library for efficient data handling and mapping operations. Rare words (frequency < 5 in the training set) are replaced by `<unk>`.
+* **Preprocessing:** Uses the `datasets` library for efficient data handling and mapping operations. Rare words (frequency < `THRESHOLD` in the training set) are replaced by `<unk>`.
 
 * **N-gram Models:** Implemented using `collections.defaultdict` for efficient counting and probability storage.
 
